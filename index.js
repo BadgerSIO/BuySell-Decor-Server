@@ -12,7 +12,7 @@ app.use(express.json());
 const verifyJWT = (req, res, next) => {
   const authHeader = req.headers.authorization;
   if (!authHeader) {
-    res.status(403).send({ message: "Access forbiden" });
+    return res.status(403).send({ message: "Access forbiden" });
   }
   const token = authHeader.split(" ")[1];
   jwt.verify(token, process.env.ACCESS_TOKEN, function (err, decoded) {
@@ -104,6 +104,15 @@ async function run() {
       const user = await userCollections.findOne(query);
       res.send({ isSeller: user?.role === "seller" });
     });
+    //check seller verified or not
+    app.get("/user/sellerVerified/:email", async (req, res) => {
+      const reqEmail = req.params.email;
+      const query = {
+        email: reqEmail,
+      };
+      const user = await userCollections.findOne(query);
+      res.send({ verified: user?.verified === "verified" });
+    });
 
     //get all sellers
     app.get("/getuser", verifyJWT, verifyAdmin, async (req, res) => {
@@ -114,6 +123,8 @@ async function run() {
       const result = await userCollections.find(query).toArray();
       res.send(result);
     });
+
+    //add product
 
     // get jwt token
     app.get("/jwT", async (req, res) => {
