@@ -1,7 +1,7 @@
 const express = require("express");
 const cors = require("cors");
 const jwt = require("jsonwebtoken");
-const { MongoClient, ServerApiVersion } = require("mongodb");
+const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 const port = process.env.PORT || 5000;
 const app = express();
 require("dotenv").config();
@@ -78,12 +78,14 @@ async function run() {
       res.send(result);
     });
     //delete user
-    app.delete(
-      "/deleteuser/:id",
-      verifyJWT,
-      verifyAdmin,
-      async (req, res) => {}
-    );
+    app.delete("/deleteuser/:id", verifyJWT, verifyAdmin, async (req, res) => {
+      const id = req.params.id;
+      const query = {
+        _id: ObjectId(id),
+      };
+      const result = await userCollections.deleteOne(query);
+      res.send(result);
+    });
     //check admin
     app.get("/user/admin/:email", async (req, res) => {
       const reqEmail = req.params.email;
