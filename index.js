@@ -43,6 +43,7 @@ async function run() {
       .db("buySellDecor")
       .collection("categories");
     const userCollections = client.db("buySellDecor").collection("users");
+    const blogCollections = client.db("buySellDecor").collection("blogs");
     //verify admin
     const verifyAdmin = async (req, res, next) => {
       const decodedEmail = req.decoded.email;
@@ -124,7 +125,12 @@ async function run() {
       res.send(result);
     });
 
-    //add product
+    //get blog
+    app.get("/blogs", async (req, res) => {
+      const query = {};
+      const result = await blogCollections.find(query).toArray();
+      res.send(result);
+    });
 
     // get jwt token
     app.get("/jwT", async (req, res) => {
