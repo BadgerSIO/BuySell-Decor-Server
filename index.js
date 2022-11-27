@@ -57,7 +57,7 @@ async function run() {
       }
       next();
     };
-    //verify admin
+    //verify seller
     const verifySeller = async (req, res, next) => {
       const decodedEmail = req.decoded.email;
       const query = {
@@ -151,11 +151,69 @@ async function run() {
       res.send(result);
     });
 
+    //advert or dont advert
+    app.put("/product/:id", verifyJWT, verifySeller, async (req, res) => {
+      const id = req.params.id;
+      const reqEmail = req.query.email;
+      console.log(reqEmail);
+      const query = {
+        _id: ObjectId(id),
+      };
+      const queryProduct = await productCollections.findOne(query);
+      const reqProductSellerEmail = queryProduct.sellerEmail;
+
+      const checkRole = {
+        email: reqEmail,
+      };
+      const user = await userCollections.findOne(checkRole);
+      if (reqEmail !== reqProductSellerEmail && user.role !== "admin") {
+        return res.status(403).send({ message: "Access Forbidden !" });
+      }
+      const advertStatus = queryProduct.advert;
+      const updatedDoc = {
+        $set: {
+          advert: !advertStatus,
+        },
+      };
+      const result = await productCollections.updateOne(query, updatedDoc);
+      res.send(result);
+    });
+
+    //delete product
+    app.delete("/product/:id", verifyJWT, verifySeller, async (req, res) => {
+      const id = req.params.id;
+      const reqEmail = req.query.email;
+      const query = {
+        _id: ObjectId(id),
+      };
+      const queryProduct = await productCollections.findOne(query);
+      const reqProductSellerEmail = queryProduct.sellerEmail;
+      const checkRole = {
+        email: reqEmail,
+      };
+      const user = await userCollections.findOne(checkRole);
+      if (reqEmail !== reqProductSellerEmail && user.role !== "admin") {
+        return res.status(403).send({ message: "Access Forbidden !" });
+      }
+      const result = await productCollections.deleteOne(query);
+      res.send(result);
+    });
+
     //get product for specific seller
     app.get("/sellerProduct", async (req, res) => {
       const queryEmail = req.query.email;
       const query = {
         sellerEmail: queryEmail,
+      };
+      const result = await productCollections.find(query).toArray();
+      res.send(result);
+    });
+
+    //get product for home page
+    app.get("/productsAdvert", async (req, res) => {
+      const query = {
+        advert: true,
+        sold: false,
       };
       const result = await productCollections.find(query).toArray();
       res.send(result);
