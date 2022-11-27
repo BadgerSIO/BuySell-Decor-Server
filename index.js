@@ -150,7 +150,7 @@ async function run() {
         },
       };
       const productResult = await productCollections.updateMany(
-        query,
+        productQuery,
         updateSeller,
         options
       );
