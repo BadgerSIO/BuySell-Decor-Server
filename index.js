@@ -219,6 +219,16 @@ async function run() {
       res.send(result);
     });
 
+    //get product buy category
+    app.get("/productsByCategory/:id", async (req, res) => {
+      const id = req.params.id;
+      const query = {
+        categoryId: id,
+      };
+      const results = await productCollections.find(query).toArray();
+      res.send(results);
+    });
+
     // get jwt token
     app.get("/jwT", async (req, res) => {
       const email = req.query.email;
