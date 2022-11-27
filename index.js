@@ -44,15 +44,27 @@ async function run() {
       .collection("categories");
     const userCollections = client.db("buySellDecor").collection("users");
     const blogCollections = client.db("buySellDecor").collection("blogs");
+    const productCollections = client.db("buySellDecor").collection("products");
     //verify admin
     const verifyAdmin = async (req, res, next) => {
       const decodedEmail = req.decoded.email;
-      console.log(decodedEmail);
       const query = {
         email: decodedEmail,
       };
       const user = await userCollections.findOne(query);
       if (user?.role !== "admin") {
+        return res.status(403).send({ message: "Forbidden access" });
+      }
+      next();
+    };
+    //verify admin
+    const verifySeller = async (req, res, next) => {
+      const decodedEmail = req.decoded.email;
+      const query = {
+        email: decodedEmail,
+      };
+      const user = await userCollections.findOne(query);
+      if (user?.role !== "seller" && user?.role !== "admin") {
         return res.status(403).send({ message: "Forbidden access" });
       }
       next();
@@ -132,10 +144,26 @@ async function run() {
       res.send(result);
     });
 
+    //add product
+    app.post("/product", verifyJWT, verifySeller, async (req, res) => {
+      const newProduct = req.body;
+      const result = await productCollections.insertOne(newProduct);
+      res.send(result);
+    });
+
+    //get product for specific seller
+    app.get("/sellerProduct", async (req, res) => {
+      const queryEmail = req.query.email;
+      const query = {
+        sellerEmail: queryEmail,
+      };
+      const result = await productCollections.find(query).toArray();
+      res.send(result);
+    });
+
     // get jwt token
     app.get("/jwT", async (req, res) => {
       const email = req.query.email;
-      console.log(email);
       const query = {
         email: email,
       };
