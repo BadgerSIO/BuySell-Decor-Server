@@ -117,6 +117,45 @@ async function run() {
       const user = await userCollections.findOne(query);
       res.send({ isSeller: user?.role === "seller" });
     });
+
+    //make seller verified
+    app.put("/user/:id", async (req, res) => {
+      const id = req.params.id;
+      const query = {
+        _id: ObjectId(id),
+      };
+      const user = await userCollections.findOne(query);
+      const vefiedStatus = user?.verified;
+
+      const options = { upsert: true };
+      const updatedDoc = {
+        $set: {
+          verified: !vefiedStatus,
+        },
+      };
+
+      const result = await userCollections.updateOne(
+        query,
+        updatedDoc,
+        options
+      );
+      //update in products also
+      const userEmail = user?.email;
+      const productQuery = {
+        sellerEmail: userEmail,
+      };
+      const updateSeller = {
+        $set: {
+          sellerVerified: !vefiedStatus,
+        },
+      };
+      const productResult = await productCollections.updateMany(
+        query,
+        updateSeller,
+        options
+      );
+      res.send(result);
+    });
     //check seller verified or not
     app.get("/user/sellerVerified/:email", async (req, res) => {
       const reqEmail = req.params.email;
@@ -124,7 +163,7 @@ async function run() {
         email: reqEmail,
       };
       const user = await userCollections.findOne(query);
-      res.send({ verified: user?.verified === "verified" });
+      res.send({ verified: user?.verified });
     });
 
     //get all sellers
@@ -170,12 +209,17 @@ async function run() {
         return res.status(403).send({ message: "Access Forbidden !" });
       }
       const advertStatus = queryProduct.advert;
+      const options = { upsert: true };
       const updatedDoc = {
         $set: {
           advert: !advertStatus,
         },
       };
-      const result = await productCollections.updateOne(query, updatedDoc);
+      const result = await productCollections.updateOne(
+        query,
+        updatedDoc,
+        options
+      );
       res.send(result);
     });
 
