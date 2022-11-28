@@ -312,11 +312,12 @@ async function run() {
       res.send(result);
     });
 
-    //get product buy category
+    //get product by category
     app.get("/productsByCategory/:id", async (req, res) => {
       const id = req.params.id;
       const query = {
         categoryId: id,
+        sold: false,
       };
       const results = await productCollections.find(query).toArray();
       res.send(results);
