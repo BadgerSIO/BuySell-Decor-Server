@@ -45,6 +45,7 @@ async function run() {
     const userCollections = client.db("buySellDecor").collection("users");
     const blogCollections = client.db("buySellDecor").collection("blogs");
     const productCollections = client.db("buySellDecor").collection("products");
+    const bookingCollections = client.db("buySellDecor").collection("bookings");
     //verify admin
     const verifyAdmin = async (req, res, next) => {
       const decodedEmail = req.decoded.email;
@@ -223,6 +224,54 @@ async function run() {
       res.send(result);
     });
 
+    //reported product
+    app.put("/reportProduct/:id", verifyJWT, async (req, res) => {
+      const id = req.params.id;
+      const query = {
+        _id: ObjectId(id),
+      };
+      const options = { upsert: true };
+      const updatedDoc = {
+        $set: {
+          reported: true,
+        },
+      };
+      const result = await productCollections.updateOne(
+        query,
+        updatedDoc,
+        options
+      );
+      res.send(result);
+    });
+
+    //remove reported product status
+    app.put("/releaseProduct/:id", verifyJWT, async (req, res) => {
+      const id = req.params.id;
+      const query = {
+        _id: ObjectId(id),
+      };
+      const options = { upsert: true };
+      const updatedDoc = {
+        $set: {
+          reported: false,
+        },
+      };
+      const result = await productCollections.updateOne(
+        query,
+        updatedDoc,
+        options
+      );
+      res.send(result);
+    });
+    //get reported products
+    app.get("/reportedProducts", verifyJWT, verifyAdmin, async (req, res) => {
+      const query = {
+        reported: true,
+      };
+      const result = await productCollections.find(query).toArray();
+      res.send(result);
+    });
+
     //delete product
     app.delete("/product/:id", verifyJWT, verifySeller, async (req, res) => {
       const id = req.params.id;
@@ -271,6 +320,13 @@ async function run() {
       };
       const results = await productCollections.find(query).toArray();
       res.send(results);
+    });
+
+    //add bookings
+    app.post("/booking", verifyJWT, async (req, res) => {
+      const newBooking = req.body;
+      const result = await bookingCollections.insertOne(newBooking);
+      res.send(result);
     });
 
     // get jwt token
