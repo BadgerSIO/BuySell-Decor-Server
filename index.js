@@ -330,6 +330,16 @@ async function run() {
       res.send(result);
     });
 
+    //get bookings by user email
+    app.get("/myBookings", verifyJWT, async (req, res) => {
+      const customerEmail = req.query.email;
+      const query = {
+        customerEmail: customerEmail,
+      };
+      const result = await bookingCollections.find(query).toArray();
+      res.send(result);
+    });
+
     // get jwt token
     app.get("/jwT", async (req, res) => {
       const email = req.query.email;
