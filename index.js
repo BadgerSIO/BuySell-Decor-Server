@@ -5,6 +5,8 @@ const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 const port = process.env.PORT || 5000;
 const app = express();
 require("dotenv").config();
+const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
+
 //midleware
 app.use(cors());
 app.use(express.json());
@@ -46,6 +48,7 @@ async function run() {
     const blogCollections = client.db("buySellDecor").collection("blogs");
     const productCollections = client.db("buySellDecor").collection("products");
     const bookingCollections = client.db("buySellDecor").collection("bookings");
+    const paymentCollections = client.db("buySellDecor").collection("payments");
     //verify admin
     const verifyAdmin = async (req, res, next) => {
       const decodedEmail = req.decoded.email;
@@ -195,7 +198,6 @@ async function run() {
     app.put("/product/:id", verifyJWT, verifySeller, async (req, res) => {
       const id = req.params.id;
       const reqEmail = req.query.email;
-      console.log(reqEmail);
       const query = {
         _id: ObjectId(id),
       };
@@ -346,6 +348,59 @@ async function run() {
         _id: ObjectId(id),
       };
       const result = await bookingCollections.findOne(query);
+      res.send(result);
+    });
+
+    app.post("/create-payment-intent", async (req, res) => {
+      const booking = req.body;
+      const price = booking.price;
+      const amount = price * 100;
+
+      const paymentIntent = await stripe.paymentIntents.create({
+        currency: "usd",
+        amount: amount,
+        payment_method_types: ["card"],
+      });
+      res.send({
+        clientSecret: paymentIntent.client_secret,
+      });
+    });
+
+    //save payment info
+    app.post("/payment", verifyJWT, async (req, res) => {
+      const paymentInfo = req.body;
+      const bookingId = paymentInfo.bookingId;
+      const productId = paymentInfo.productId;
+      //update booking
+      const querybooking = {
+        _id: ObjectId(bookingId),
+      };
+      const options = { upsert: true };
+      const updateDocBooking = {
+        $set: {
+          sold: true,
+        },
+      };
+      const bookUpdate = await bookingCollections.updateOne(
+        querybooking,
+        updateDocBooking,
+        options
+      );
+      // update product
+      const queryProduct = {
+        _id: ObjectId(productId),
+      };
+      const updateProductDoc = {
+        $set: {
+          sold: true,
+        },
+      };
+      const productUpdate = await productCollections.updateOne(
+        queryProduct,
+        updateProductDoc,
+        options
+      );
+      const result = await paymentCollections.insertOne(paymentInfo);
       res.send(result);
     });
     // get jwt token
