@@ -181,6 +181,16 @@ async function run() {
       res.send(result);
     });
 
+    //get all buyers
+    app.get("/getbuyers", verifyJWT, verifyAdmin, async (req, res) => {
+      const reqrole = req.query.role;
+      const query = {
+        role: reqrole,
+      };
+      const result = await userCollections.find(query).toArray();
+      res.send(result);
+    });
+
     //get blog
     app.get("/blogs", async (req, res) => {
       const query = {};
